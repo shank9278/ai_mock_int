@@ -1,6 +1,4 @@
-import { error } from "console";
-import { Models } from "openai/resources/models.mjs";
-import { success } from "zod";
+
 import {google} from "@ai-sdk/google"
 import {generateText} from "ai"
 import { getRandomInterviewCover } from "@/lib/utils";
