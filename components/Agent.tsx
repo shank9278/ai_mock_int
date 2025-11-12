@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image'
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
-// import { vapi } from '@/lib/vapi.sdk';
+import { vapi } from "@/lib/actions/vapi.sdk";
+import { interviewer } from '@/constants';
+
 
 
 enum CallStatus {
@@ -20,76 +22,106 @@ interface SavedMessage{
     content: string;
 }
 
-const Agent = ({userName, userId, type}: AgentProps) => {
+const Agent = ({userName, userId, type, interviewId, questions}: AgentProps) => {
     const router = useRouter();
     const [isSpeaking, setIsSpeaking ] = useState(false);
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [messages, setMessages] = useState<SavedMessage[]>([]);
 
-    //  useEffect( () => {
-    //     const onCallStart =() => setCallStatus(CallStatus.ACTIVE);
-    //     const onCallEnd =() => setCallStatus(CallStatus.FINISHED);
+     useEffect( () => {
+        const onCallStart =() => setCallStatus(CallStatus.ACTIVE);
+        const onCallEnd =() => setCallStatus(CallStatus.FINISHED);
 
-    //     const onMessage =(message:Message) => {
-    //         if(message.type === 'transcript' && message.transcript === 'final'){
-    //             const newMessage = {role:message.role, content: message.transcript }
+        const onMessage =(message:Message) => {
+            if(message.type === 'transcript' && message.transcript === 'final'){
+                const newMessage = {role:message.role, content: message.transcript }
 
-    //             setMessages((prev)=> [...prev, newMessage]);
-    //         }
-    //     }
+                setMessages((prev)=> [...prev, newMessage]);
+            }
+        }
 
-    //     const onSpeechStart = () =>setIsSpeaking(true);
-    //     const onSpeechEnd = () =>setIsSpeaking(false);
+        const onSpeechStart = () =>setIsSpeaking(true);
+        const onSpeechEnd = () =>setIsSpeaking(false);
 
-    //     const onError = (error: Error) => console.log('Error', error);
+        const onError = (error: Error) => console.log('Error', error);
 
-    //     vapi.on('call-start', onCallStart);
-    //     vapi.on('call-end', onCallEnd);
-    //     vapi.on('message', onMessage);
-    //     vapi.on('speech-start', onSpeechStart);
-    //     vapi.on('speech-end', onSpeechEnd);
-    //     vapi.on('error', onError);
+        vapi.on('call-start', onCallStart);
+        vapi.on('call-end', onCallEnd);
+        vapi.on('message', onMessage);
+        vapi.on('speech-start', onSpeechStart);
+        vapi.on('speech-end', onSpeechEnd);
+        vapi.on('error', onError);
 
-    //     return () => {
-    //     vapi.off('call-start', onCallStart);
-    //     vapi.off('call-end', onCallEnd);
-    //     vapi.off('message', onMessage);
-    //     vapi.off('speech-start', onSpeechStart);
-    //     vapi.off('speech-end', onSpeechEnd);
-    //     vapi.off('error', onError);
-    //     }
-    //  }, [])
+        return () => {
+        vapi.off('call-start', onCallStart);
+        vapi.off('call-end', onCallEnd);
+        vapi.off('message', onMessage);
+        vapi.off('speech-start', onSpeechStart);
+        vapi.off('speech-end', onSpeechEnd);
+        vapi.off('error', onError);
+        }
+     }, [])
 
-    //  useEffect (() =>{
-    //     if(callStatus === CallStatus.FINISHED) router.push('/');
-    //  },[messages, CallStatus, type, userId]);
+     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+        console.log('Generate feedback here.');
 
-    //  const handelCall = async() => {
-    //     setCallStatus(CallStatus.CONNECTING);
+        // Todo: cretate a server action that generates feedback
+        const {success, id} = {
+            success: true,
+            id: 'feedback-id'
+        }
 
-    //     await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!), {
-    //         VariableValues:{
-    //             username: userName,
-    //             userid: userId,
-    //         }
-    //     }
-    //  }
+        if (success && id) {
+            router.push('/interview/${interviewId}/feedback');
+        } else {
+            console.log('Error saving feedback');
+            router.push('/')
+        }
+     }
 
-    //  const handelDisconnect = async () => {
-    //     setCallStatus(CallStatus.FINISHED);
+     useEffect (() =>{
 
-    //     vapi.stop();
-    //  }
+        if(callStatus === CallStatus.FINISHED) {
+            if(type === 'generate'){
+                router.push('/')
+            } else {
+                handleGenerateFeedback(messages);
+            }
+        }
+     },[messages, CallStatus, type, userId]);
 
-    const handelCall = async () => {
-    alert("Voice call feature is not enabled yet. Complete VAPI setup first.");
-};
+     const handelCall = async() => {
+        setCallStatus(CallStatus.CONNECTING);
 
-const handelDisconnect = async () => {
-    alert("Call end — but actually VAPI was never started.");
-};
+        if (type === "generate") {
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
+            variableValues:{
+                username: userName,
+                userid: userId,
+            }
+        });
+     } else {
+        let formattedQuestions = '';
 
+        if(questions){
+            formattedQuestions = questions
+            .map((question) => `-${questions}`)
+            .join('\n');
+        }
 
+        await vapi.start(interviewer,{
+            variableValues: {
+              questions: formattedQuestions  
+            }
+        })
+     }
+    }
+
+     const handelDisconnect = async () => {
+        setCallStatus(CallStatus.FINISHED);
+
+        vapi.stop();
+     }
 
      const latestMessage = messages[messages.length -1]?.content;
      const isCallInactiveOrFinished = CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
