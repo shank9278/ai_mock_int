@@ -1,9 +1,10 @@
-import { cn, getTechLogos } from '@/lib/utils'
-import Image from 'next/image'
-import React from 'react'
 
-export default async function DisplayTechIcons({ techStack }: { techStack: string[] }) {
-  const techIcons = await getTechLogos(techStack)
+
+import Image from "next/image";
+import { cn, getTechLogos } from "@/lib/utils";
+
+const DisplayTechIcons = async ({ techStack }: TechIconProps) => {
+  const techIcons = await getTechLogos(techStack);
 
   return (
     <div className="flex flex-row">
@@ -11,8 +12,8 @@ export default async function DisplayTechIcons({ techStack }: { techStack: strin
         <div
           key={tech}
           className={cn(
-            'relative group bg-dark-300 rounded-full p-2 flex flex-center',
-            index >= 1 && '-ml-3'
+            "relative group bg-dark-300 rounded-full p-2 flex flex-center",
+            index >= 1 && "-ml-3"
           )}
         >
           <span className="tech-tooltip">{tech}</span>
@@ -27,5 +28,7 @@ export default async function DisplayTechIcons({ techStack }: { techStack: strin
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
+
+export default DisplayTechIcons;

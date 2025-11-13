@@ -2,7 +2,6 @@ import InterviewCard from '@/components/InterviewCard'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
 import { getCurrentUser } from '@/lib/actions/auth.action'
 import { promise } from 'zod'
 import{getInterviewsByUserId, getLatestInterviews} from "@/lib/actions/general.action"
@@ -15,8 +14,8 @@ const page = async () => {
     await getLatestInterviews({userId: user?.id!})
   ])
   
-  const hasPastInterviews = userInterviews?.length > 0;
-  const hasUpcomingInterviews = latestInterviews?.length > 0;
+  const hasPastInterviews = userInterviews?.length! > 0;
+  const hasUpcomingInterviews = latestInterviews?.length! > 0;
   return (
     <>
      <section className="card-cta" >
